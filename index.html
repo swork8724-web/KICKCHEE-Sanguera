@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kickchee Pro | Système de Livraison Intégré</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #e67e22;
+            --dark: #0f172a;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.1);
+            --shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; }
+        body { background: #f8fafc; color: var(--dark); overflow-x: hidden; }
+
+        .hidden { display: none !important; }
+
+        /* --- PORTAIL D'AUTHENTIFICATION --- */
+        .portal { 
+            height: 100vh; display: flex; align-items: center; justify-content: center; 
+            background: radial-gradient(circle at center, #1e293b, #0f172a); 
+        }
+        .glass-container { 
+            background: var(--glass); backdrop-filter: blur(25px); 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 35px; 
+            padding: 40px; width: 90%; max-width: 450px; text-align: center; color: white; 
+        }
+        h1 span { color: var(--primary); }
+
+        .grid-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+        .role-item { 
+            background: rgba(255,255,255,0.05); padding: 25px; border-radius: 20px; 
+            cursor: pointer; transition: 0.3s; border: 1px solid transparent; 
+        }
+        .role-item:hover { background: var(--primary); transform: translateY(-5px); }
+        .role-item i { font-size: 1.8rem; margin-bottom: 10px; display: block; }
+
+        .input-group { 
+            background: rgba(255,255,255,0.1); border-radius: 12px; 
+            margin-bottom: 15px; display: flex; align-items: center; padding: 0 15px; 
+        }
+        .input-group input { 
+            background: transparent; border: none; padding: 12px; 
+            color: white; width: 100%; outline: none; 
+        }
+        .input-group i { color: rgba(255,255,255,0.5); }
+
+        /* --- NAVIGATION --- */
+        .nav-glass { position: sticky; top:0; background: white; padding: 15px 5%; z-index: 1000; box-shadow: var(--shadow); }
+        .nav-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 800; font-size: 1.4rem; }
+        .avatar-logout { 
+            background: #fee2e2; color: #ef4444; width: 40px; height: 40px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; 
+        }
+
+        /* --- INTERFACES & CARDS --- */
+        .interface { padding: 40px 5%; animation: fadeIn 0.6s ease; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
+        .card { 
+            background: white; padding: 25px; border-radius: 25px; 
+            box-shadow: var(--shadow); margin-bottom: 25px; border: 1px solid #f1f5f9; 
+        }
+
+        /* --- STEPPER (BARRE DE COURS VENDEUR) --- */
+        .stepper { display: flex; justify-content: space-between; position: relative; margin: 30px 0; }
+        .stepper::before { 
+            content: ""; position: absolute; top: 50%; left: 0; right: 0; 
+            height: 2px; background: #e2e8f0; z-index: 1; transform: translateY(-50%); 
+        }
+        .step { 
+            width: 40px; height: 40px; border-radius: 50%; background: white; 
+            border: 2px solid #e2e8f0; z-index: 2; display: flex; align-items: center; 
+            justify-content: center; position: relative; font-size: 0.9rem; 
+        }
+        .step.active { border-color: var(--primary); color: var(--primary); font-weight: bold; }
+        .step.done { border-color: #22c55e; background: #22c55e; color: white; }
+        .step-label { 
+            position: absolute; top: 45px; font-size: 0.7rem; font-weight: 700; 
+            color: #64748b; white-space: nowrap; left: 50%; transform: translateX(-50%); 
+        }
+
+        /* --- BOUTONS --- */
+        .btn-primary-glow { 
+            width: 100%; background: var(--primary); color: white; border: none; 
+            padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; 
+        }
+        .btn-primary-glow:hover { box-shadow: 0 10px 20px rgba(230, 126, 34, 0.3); transform: scale(1.02); }
+
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="auth-portal" class="portal">
+        <div class="glass-container">
+            <h1>KICK<span>CHEE</span></h1>
+            <p style="margin-bottom: 25px; opacity: 0.7;">Plateforme de livraison - Zanguera</p>
+            
+            <div id="role-selection" class="grid-roles">
+                <div class="role-item" onclick="prepareLogin('client')"><i class="fa-solid fa-user"></i><span>Client</span></div>
+                <div class="role-item" onclick="prepareLogin('vendeur')"><i class="fa-solid fa-store"></i><span>Vendeur</span></div>
+                <div class="role-item" onclick="prepareLogin('livreur')"><i class="fa-solid fa-motorcycle"></i><span>Livreur</span></div>
+                <div class="role-item" onclick="prepareLogin('admin')"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></div>
+            </div>
+
+            <form id="auth-form" class="hidden" onsubmit="handleFinalAuth(event)">
+                <h3 id="role-display-name" style="margin-bottom: 20px;">Connexion</h3>
+                <div class="input-group">
+                    <i class="fa-solid fa-user-circle"></i>
+                    <input type="text" id="user-name" placeholder="Nom d'utilisateur" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="user-pass" placeholder="Mot de passe" required>
+                </div>
+                <button type="submit" class="btn-primary-glow">Entrer dans l'application</button>
+            </form>
+        </div>
+    </div>
+
+    <nav id="app-nav" class="hidden nav-glass">
+        <div class="nav-content">
+            <div class="logo">KICK<span>CHEE</span></div>
+            <div class="nav-user-info" style="display: flex; align-items: center; gap: 15px;">
+                <span id="nav-user-name" style="font-weight: 600;">Utilisateur</span>
+                <div class="avatar-logout" onclick="logout()"><i class="fa-solid fa-power-off"></i></div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="toast-container"></div>
+
+    <main id="app-content" class="hidden">
+        
+        <section id="view-client" class="interface hidden">
+            <h3 style="margin-bottom: 20px;">Menu du jour</h3>
+            <div class="product-grid" id="client-dishes"></div>
+        </section>
+
+        <section id="view-vendeur" class="interface hidden">
+            <div class="card">
+                <h3><i class="fa-solid fa-satellite-dish" style="color: var(--primary);"></i> Suivi des livraisons</h3>
+                <div id="vendeur-tracking-list"></div>
+            </div>
+            <div class="card">
+                <h3><i class="fa-solid fa-receipt"></i> Commandes entrantes</h3>
+                <div id="vendeur-new-orders"></div>
+            </div>
+        </section>
+
+        <section id="view-livreur" class="interface hidden">
+            <h3 style="margin-bottom: 20px;">Mes courses assignées</h3>
+            <div id="livreur-tasks"></div>
+        </section>
+
+        <section id="view-admin" class="interface hidden">
+            <div class="admin-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="card">
+                    <h4>Créer un compte Livreur</h4>
+                    <input type="text" id="adm-liv-name" placeholder="Nom complet" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ddd;">
+                    <input type="password" id="adm-liv-pass" placeholder="Mot de passe" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ddd;">
+                    <button class="btn-primary-glow" onclick="addLivreur()">Enregistrer</button>
+                </div>
+                <div class="card">
+                    <h4>Ajouter un Plat au Menu</h4>
+                    <input type="text" id="adm-dish-name" placeholder="Nom du plat" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ddd;">
+                    <input type="number" id="adm-dish-price" placeholder="Prix (FCFA)" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ddd;">
+                    <button class="btn-primary-glow" onclick="addDish()">Publier le plat</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- BASE DE DONNÉES LOCALE ---
+        let db = {
+            user: JSON.parse(localStorage.getItem('kc_session')) || null,
+            inventory: JSON.parse(localStorage.getItem('kc_plats')) || [
+                { id: 1, name: "Atchéké au Poisson", price: 2500 },
+                { id: 2, name: "Riz Cantonais Spécial", price: 3500 }
+            ],
+            livreurs: JSON.parse(localStorage.getItem('kc_staff')) || [{ name: "Sami", pass: "1234" }],
+            orders: JSON.parse(localStorage.getItem('kc_commandes')) || []
+        };
+
+        function persist() {
+            localStorage.setItem('kc_plats', JSON.stringify(db.inventory));
+            localStorage.setItem('kc_staff', JSON.stringify(db.livreurs));
+            localStorage.setItem('kc_commandes', JSON.stringify(db.orders));
+        }
+
+        // --- AUTHENTIFICATION ---
+        function prepareLogin(role) {
+            db.tempRole = role;
+            document.getElementById('role-selection').classList.add('hidden');
+            document.getElementById('auth-form').classList.remove('hidden');
+            document.getElementById('role-display-name').innerText = `Connexion ${role.toUpperCase()}`;
+        }
+
+        function handleFinalAuth(event) {
+            event.preventDefault();
+            const name = document.getElementById('user-name').value;
+            db.user = { name, role: db.tempRole };
+            localStorage.setItem('kc_session', JSON.stringify(db.user));
+            location.reload();
+        }
+
+        // --- ADMIN ---
+        function addLivreur() {
+            const name = document.getElementById('adm-liv-name').value;
+            const pass = document.getElementById('adm-liv-pass').value;
+            if(!name || !pass) return toast("Champs vides !");
+            db.livreurs.push({ name, pass });
+            persist();
+            toast("Livreur enregistré !");
+            location.reload();
+        }
+
+        function addDish() {
+            const name = document.getElementById('adm-dish-name').value;
+            const price = document.getElementById('adm-dish-price').value;
+            if(!name || !price) return toast("Données invalides !");
+            db.inventory.push({ id: Date.now(), name, price: parseInt(price) });
+            persist();
+            toast("Plat ajouté au menu !");
+            location.reload();
+        }
+
+        // --- CLIENT ---
+        function renderClient() {
+            const container = document.getElementById('client-dishes');
+            container.innerHTML = db.inventory.map(p => `
+                <div class="card">
+                    <h4>${p.name}</h4>
+                    <p style="color:var(--primary); font-weight:800; font-size:1.2rem;">${p.price} FCFA</p>
+                    <button class="btn-primary-glow" style="margin-top:10px;" onclick="placeOrder('${p.name}')">Commander</button>
+                </div>
+            `).join('');
+        }
+
+        function placeOrder(plat) {
+            db.orders.push({
+                id: Math.floor(1000 + Math.random() * 8999),
+                plat: plat,
+                client: db.user.name,
+                status: 1, // 1:Attente, 2:Préparation, 3:Route, 4:Livré
+                livreur: null
+            });
+            persist();
+            toast("🚀 Commande envoyée !");
+        }
+
+        // --- VENDEUR ---
+        function renderVendeur() {
+            const newList = document.getElementById('vendeur-new-orders');
+            const trackList = document.getElementById('vendeur-tracking-list');
+
+            const news = db.orders.filter(o => o.status === 1);
+            newList.innerHTML = news.map(o => `
+                <div class="card">
+                    <p><strong>${o.plat}</strong> - Client: ${o.client}</p>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <select id="select-${o.id}" style="flex:1; padding:10px; border-radius:8px;">
+                            ${db.livreurs.map(l => `<option value="${l.name}">${l.name}</option>`).join('')}
+                        </select>
+                        <button class="btn-primary-glow" style="width:auto; padding:10px 20px;" onclick="assign(${o.id})">Assigner</button>
+                    </div>
+                </div>
+            `).join('') || "Aucune nouvelle commande.";
+
+            const actives = db.orders.filter(o => o.status > 1);
+            trackList.innerHTML = actives.map(o => `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                        <strong>#${o.id} - ${o.plat}</strong>
+                        <span style="color:var(--primary)">Livreur : ${o.livreur}</span>
+                    </div>
+                    <div class="stepper">
+                        <div class="step ${o.status >= 2 ? 'done' : ''}"><i class="fa-solid fa-fire"></i><span class="step-label">Cuisine</span></div>
+                        <div class="step ${o.status >= 3 ? 'done' : ''}"><i class="fa-solid fa-motorcycle"></i><span class="step-label">Route</span></div>
+                        <div class="step ${o.status >= 4 ? 'done' : ''}"><i class="fa-solid fa-check-double"></i><span class="step-label">Livré</span></div>
+                    </div>
+                </div>
+            `).join('') || "Rien en cours.";
+        }
+
+        function assign(id) {
+            const liv = document.getElementById(`select-${id}`).value;
+            const order = db.orders.find(o => o.id === id);
+            order.status = 2;
+            order.livreur = liv;
+            persist();
+            renderVendeur();
+            toast(`Commande assignée à ${liv}`);
+        }
+
+        // --- LIVREUR ---
+        function renderLivreur() {
+            const container = document.getElementById('livreur-tasks');
+            const tasks = db.orders.filter(o => o.livreur === db.user.name && o.status < 4);
+            container.innerHTML = tasks.map(o => `
+                <div class="card">
+                    <h4>#${o.id} - ${o.plat}</h4>
+                    <p>Client: ${o.client}</p>
+                    <button class="btn-primary-glow" style="margin-top:15px;" onclick="nextStep(${o.id}, ${o.status + 1})">
+                        ${o.status === 2 ? 'Récupérer le colis' : 'Confirmer la livraison'}
+                    </button>
+                </div>
+            `).join('') || "Pas de livraison pour vous.";
+        }
+
+        function nextStep(id, val) {
+            db.orders.find(o => o.id === id).status = val;
+            persist();
+            location.reload();
+        }
+
+        // --- DÉMARRAGE ---
+        function toast(m) {
+            const t = document.createElement('div');
+            t.style = "background:var(--dark); color:white; padding:15px 25px; border-radius:12px; margin-top:10px; animation:fadeIn 0.3s; box-shadow:0 10px 20px rgba(0,0,0,0.2);";
+            t.innerText = m;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        function logout() { localStorage.removeItem('kc_session'); location.reload(); }
+
+        window.onload = () => {
+            if(db.user) {
+                document.getElementById('auth-portal').classList.add('hidden');
+                document.getElementById('app-nav').classList.remove('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                document.getElementById('nav-user-name').innerText = db.user.name;
+                document.querySelectorAll('.interface').forEach(i => i.classList.add('hidden'));
+                document.getElementById(`view-${db.user.role}`).classList.remove('hidden');
+                if(db.user.role === 'client') renderClient();
+                if(db.user.role === 'vendeur') renderVendeur();
+                if(db.user.role === 'livreur') renderLivreur();
+            }
+        };
+    </script>
+</body>
+</html>
